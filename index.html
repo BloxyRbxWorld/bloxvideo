@@ -93,13 +93,17 @@
         };
 
         // 5. وظيفة الحذف النهائي
-        window.deleteVideo = async (id) => {
-            if(confirm("تحذير: هل أنت متأكد من حذف هذا الفيديو ومكوناته نهائياً؟")) {
-                try {
-                    await db.collection("videos").doc(id).delete();
-                } catch (e) { alert("خطأ في الحذف: " + e.message); }
-            }
-        };
+       window.deleteVideo = async (fieldId) => {
+    if(confirm("هل أنت متأكد من حذف هذا الفيديو؟")) {
+        try {
+            const docRef = db.collection("Videos").doc("allVideos");
+            await docRef.update({
+                [fieldId]: firebase.firestore.FieldValue.delete()
+            });
+            alert("تم الحذف بنجاح");
+        } catch (e) { alert("خطأ: " + e.message); }
+    }
+};
 
         // وظيفة استخراج ID يوتيوب
         function extractYouTubeId(url) {
