@@ -19,19 +19,32 @@
         .btn-delete { background: var(--danger); }
         .btn-approve:hover, .btn-delete:hover { opacity: 0.8; }
         .status-badge { font-size: 0.8em; padding: 2px 8px; border-radius: 10px; background: #eee; }
+        
+        /* تصميم قسم الدخول */
+        #loginSection { max-width: 400px; margin: 100px auto; text-align: center; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input[type="password"] { width: 90%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <h1>مدير محتوى فيديوهات التطبيق</h1>
-    <div id="loader" style="text-align: center;">جاري تحميل الفيديوهات...</div>
-    <div id="videoGrid" class="grid"></div>
+    <div id="loginSection">
+        <h2>دخول المسؤول</h2>
+        <input type="password" id="passInput" placeholder="أدخل كلمة المرور">
+        <button onclick="checkPass()" style="background: var(--primary); width: 100%; padding: 10px;">دخول</button>
+        <p id="errorMsg" style="color: red; display: none; margin-top: 10px;">كلمة المرور خاطئة!</p>
+    </div>
+
+    <div id="adminPanel" style="display: none;">
+        <h1>مدير محتوى فيديوهات التطبيق</h1>
+        <div id="loader" style="text-align: center;">جاري تحميل الفيديوهات...</div>
+        <div id="videoGrid" class="grid"></div>
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
     <script>
-        // 1. إعدادات Firebase (ضع إعدادات مشروعك هنا)
+        // 1. إعدادات Firebase الخاصة بك
         const firebaseConfig = {
             apiKey: "AIzaSyCepiqRrWCc9shiyx1YDooHaZUTqesK7Ds",
             authDomain: "blox-ad2af.firebaseapp.com",
@@ -44,88 +57,91 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // --- كلمة المرور هنا ---
+        const MY_PASSWORD = "123654789@W"; 
+
+        function checkPass() {
+            const input = document.getElementById('passInput').value;
+            if (input === MY_PASSWORD) {
+                document.getElementById('loginSection').style.display = "none";
+                document.getElementById('adminPanel').style.display = "block";
+                loadVideos(); // تحميل الفيديوهات فقط بعد الدخول الصحيح
+            } else {
+                document.getElementById('errorMsg').style.display = "block";
+            }
+        }
+
         // 2. جلب البيانات من Firestore
         function loadVideos() {
-    const grid = document.getElementById('videoGrid');
-    const loader = document.getElementById('loader');
-    
-    // الوصول للوثيقة المحددة allVideos داخل مجموعة Videos
-    db.collection("Videos").doc("allVideos").onSnapshot((doc) => {
-        if (doc.exists) {
-            grid.innerHTML = "";
-            loader.style.display = "none";
+            const grid = document.getElementById('videoGrid');
+            const loader = document.getElementById('loader');
             
-            const data = doc.data();
-            // بما أن البيانات عبارة عن Map، سنحولها إلى قائمة للتكرار عليها
-            Object.keys(data).forEach((fieldId) => {
-                const videoData = data[fieldId];
-                renderCard(fieldId, videoData, grid);
+            db.collection("Videos").doc("allVideos").onSnapshot((doc) => {
+                if (doc.exists) {
+                    grid.innerHTML = "";
+                    loader.style.display = "none";
+                    const data = doc.data();
+                    Object.keys(data).forEach((fieldId) => {
+                        renderCard(fieldId, data[fieldId], grid);
+                    });
+                } else {
+                    loader.innerHTML = "الوثيقة allVideos غير موجودة!";
+                }
+            }, (error) => {
+                loader.innerHTML = "خطأ في التحميل: " + error.message;
             });
-        } else {
-            loader.innerHTML = "الوثيقة allVideos غير موجودة!";
         }
-    }, (error) => {
-        console.error("Error fetching document: ", error);
-        loader.innerHTML = "خطأ في التحميل: " + error.message;
-    });
-}
 
-// 3. بناء واجهة الفيديو (تعديل وظيفة الحذف والموافقة)
-function renderCard(fieldId, data, container) {
-    const videoId = extractYouTubeId(data.videoUrl);
-    const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : 'https://via.placeholder.com/300x180?text=No+Thumbnail';
+        // 3. بناء واجهة الفيديو
+        function renderCard(fieldId, data, container) {
+            const videoId = extractYouTubeId(data.videoUrl);
+            const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : 'https://via.placeholder.com/300x180?text=No+Thumbnail';
 
-    const card = document.createElement('div');
-    card.className = `card ${data.status}`;
-    card.innerHTML = `
-        <img src="${thumbUrl}" class="thumbnail" onclick="window.open('${data.videoUrl}')">
-        <p><strong>المنصة:</strong> ${data.platform} <span class="status-badge">${data.status}</span></p>
-        <p style="font-size: 0.7em; color: #777; word-break: break-all;">${data.videoUrl}</p>
-        <div class="actions">
-            ${data.status === 'pending' ? 
-                `<button class="btn-approve" onclick="updateStatus('${fieldId}', 'approved')">موافقة</button>` : 
-                `<span></span>`}
-            <button class="btn-delete" onclick="deleteVideo('${fieldId}')">حذف نهائي</button>
-        </div>
-    `;
-    container.appendChild(card);
-}
+            const card = document.createElement('div');
+            card.className = `card ${data.status}`;
+            card.innerHTML = `
+                <img src="${thumbUrl}" class="thumbnail" onclick="window.open('${data.videoUrl}')">
+                <p><strong>المنصة:</strong> ${data.platform} <span class="status-badge">${data.status}</span></p>
+                <div class="actions">
+                    ${data.status === 'pending' ? 
+                        `<button class="btn-approve" onclick="updateStatus('${fieldId}', 'approved')">موافقة</button>` : 
+                        `<span></span>`}
+                    <button class="btn-delete" onclick="deleteVideo('${fieldId}')">حذف نهائي</button>
+                </div>
+            `;
+            container.appendChild(card);
+        }
 
-// 4. تحديث الحالة (داخل الـ Map)
-window.updateStatus = async (fieldId, newStatus) => {
-    if(confirm("هل تريد الموافقة؟")) {
-        try {
-            const docRef = db.collection("Videos").doc("allVideos");
-            // تحديث حقل محدد داخل الـ Map
-            await docRef.update({
-                [`${fieldId}.status`]: newStatus
-            });
-        } catch (e) { alert("خطأ: " + e.message); }
-    }
-};
+        // 4. تحديث الحالة
+        window.updateStatus = async (fieldId, newStatus) => {
+            if(confirm("هل تريد الموافقة؟")) {
+                try {
+                    const docRef = db.collection("Videos").doc("allVideos");
+                    await docRef.update({ [`${fieldId}.status`]: newStatus });
+                } catch (e) { alert("خطأ: " + e.message); }
+            }
+        };
 
-        // 5. وظيفة الحذف النهائي
-       window.deleteVideo = async (fieldId) => {
-    if(confirm("هل أنت متأكد من حذف هذا الفيديو؟")) {
-        try {
-            const docRef = db.collection("Videos").doc("allVideos");
-            await docRef.update({
-                [fieldId]: firebase.firestore.FieldValue.delete()
-            });
-            alert("تم الحذف بنجاح");
-        } catch (e) { alert("خطأ: " + e.message); }
-    }
-};
+        // 5. الحذف النهائي
+        window.deleteVideo = async (fieldId) => {
+            if(confirm("هل أنت متأكد من حذف هذا الفيديو؟")) {
+                try {
+                    const docRef = db.collection("Videos").doc("allVideos");
+                    await docRef.update({ [fieldId]: firebase.firestore.FieldValue.delete() });
+                } catch (e) { alert("خطأ: " + e.message); }
+            }
+        };
 
-        // وظيفة استخراج ID يوتيوب
         function extractYouTubeId(url) {
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
             const match = url.match(regExp);
             return (match && match[2].length === 11) ? match[2] : null;
         }
 
-        // بدء التشغيل
-        loadVideos();
+        // السماح بالدخول عند الضغط على Enter
+        document.getElementById('passInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') checkPass();
+        });
     </script>
 </body>
 </html>
