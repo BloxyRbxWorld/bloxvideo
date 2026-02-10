@@ -46,51 +46,63 @@
 
         // 2. جلب البيانات من Firestore
         function loadVideos() {
-            const grid = document.getElementById('videoGrid');
-            const loader = document.getElementById('loader');
+    const grid = document.getElementById('videoGrid');
+    const loader = document.getElementById('loader');
+    
+    // الوصول للوثيقة المحددة allVideos داخل مجموعة Videos
+    db.collection("Videos").doc("allVideos").onSnapshot((doc) => {
+        if (doc.exists) {
+            grid.innerHTML = "";
+            loader.style.display = "none";
             
-            // استماع مباشر للتغييرات (Real-time)
-            db.collection("videos").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
-                grid.innerHTML = "";
-                loader.style.display = "none";
-                
-                snapshot.forEach((doc) => {
-                    const video = doc.data();
-                    const id = doc.id;
-                    renderCard(id, video, grid);
-                });
+            const data = doc.data();
+            // بما أن البيانات عبارة عن Map، سنحولها إلى قائمة للتكرار عليها
+            Object.keys(data).forEach((fieldId) => {
+                const videoData = data[fieldId];
+                renderCard(fieldId, videoData, grid);
             });
+        } else {
+            loader.innerHTML = "الوثيقة allVideos غير موجودة!";
         }
+    }, (error) => {
+        console.error("Error fetching document: ", error);
+        loader.innerHTML = "خطأ في التحميل: " + error.message;
+    });
+}
 
-        // 3. بناء واجهة الفيديو
-        function renderCard(id, data, container) {
-            const videoId = extractYouTubeId(data.videoUrl);
-            const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : 'https://via.placeholder.com/300x180?text=No+Thumbnail';
+// 3. بناء واجهة الفيديو (تعديل وظيفة الحذف والموافقة)
+function renderCard(fieldId, data, container) {
+    const videoId = extractYouTubeId(data.videoUrl);
+    const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : 'https://via.placeholder.com/300x180?text=No+Thumbnail';
 
-            const card = document.createElement('div');
-            card.className = `card ${data.status}`;
-            card.innerHTML = `
-                <img src="${thumbUrl}" class="thumbnail" onclick="window.open('${data.videoUrl}')">
-                <p><strong>المنصة:</strong> ${data.platform} <span class="status-badge">${data.status}</span></p>
-                <p style="font-size: 0.7em; color: #777; word-break: break-all;">${data.videoUrl}</p>
-                <div class="actions">
-                    ${data.status === 'pending' ? 
-                        `<button class="btn-approve" onclick="updateStatus('${id}', 'approved')">موافقة</button>` : 
-                        `<span></span>`}
-                    <button class="btn-delete" onclick="deleteVideo('${id}')">حذف نهائي</button>
-                </div>
-            `;
-            container.appendChild(card);
-        }
+    const card = document.createElement('div');
+    card.className = `card ${data.status}`;
+    card.innerHTML = `
+        <img src="${thumbUrl}" class="thumbnail" onclick="window.open('${data.videoUrl}')">
+        <p><strong>المنصة:</strong> ${data.platform} <span class="status-badge">${data.status}</span></p>
+        <p style="font-size: 0.7em; color: #777; word-break: break-all;">${data.videoUrl}</p>
+        <div class="actions">
+            ${data.status === 'pending' ? 
+                `<button class="btn-approve" onclick="updateStatus('${fieldId}', 'approved')">موافقة</button>` : 
+                `<span></span>`}
+            <button class="btn-delete" onclick="deleteVideo('${fieldId}')">حذف نهائي</button>
+        </div>
+    `;
+    container.appendChild(card);
+}
 
-        // 4. وظيفة الموافقة على الفيديو
-        window.updateStatus = async (id, newStatus) => {
-            if(confirm("هل تريد الموافقة على عرض هذا الفيديو في التطبيق؟")) {
-                try {
-                    await db.collection("videos").doc(id).update({ status: newStatus });
-                } catch (e) { alert("خطأ في التحديث: " + e.message); }
-            }
-        };
+// 4. تحديث الحالة (داخل الـ Map)
+window.updateStatus = async (fieldId, newStatus) => {
+    if(confirm("هل تريد الموافقة؟")) {
+        try {
+            const docRef = db.collection("Videos").doc("allVideos");
+            // تحديث حقل محدد داخل الـ Map
+            await docRef.update({
+                [`${fieldId}.status`]: newStatus
+            });
+        } catch (e) { alert("خطأ: " + e.message); }
+    }
+};
 
         // 5. وظيفة الحذف النهائي
        window.deleteVideo = async (fieldId) => {
