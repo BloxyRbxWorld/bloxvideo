@@ -3,53 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم الفيديوهات</title>
+    <title>لوحة تحكم الفيديوهات - Blox</title>
     <style>
-        :root { --primary: #2c3e50; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; }
+        :root { --primary: #2c3e50; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --purple: #8e44ad; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 20px; }
         h1 { color: var(--primary); text-align: center; }
         
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 30px; }
-        .card { background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 15px; border-top: 5px solid #ccc; }
+        /* الهيدر والأزرار العلوية */
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        /* شبكة الفيديوهات */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 15px; border-top: 5px solid #ccc; transition: 0.3s; }
+        .card:hover { transform: translateY(-5px); }
         .card.approved { border-top-color: var(--success); }
         .card.pending { border-top-color: var(--warning); }
         
-        .thumbnail { width: 100%; height: 180px; object-fit: cover; border-radius: 5px; cursor: pointer; }
+        .thumbnail { width: 100%; height: 180px; object-fit: cover; border-radius: 5px; cursor: pointer; background: #eee; }
+        .video-info { margin-top: 10px; font-size: 0.9em; }
+        .video-url { font-size: 0.75em; color: #777; word-break: break-all; margin-top: 5px; }
+
         .actions { display: flex; justify-content: space-between; margin-top: 15px; }
         
-        button { border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; transition: 0.3s; }
+        button { border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
         .btn-approve { background: var(--success); }
         .btn-delete { background: var(--danger); }
-        .btn-clean { background: #8e44ad; margin: 10px auto; display: block; } /* زر التنظيف */
-        
+        .btn-clean { background: var(--purple); }
+        .btn-logout { background: #7f8c8d; }
         button:hover { opacity: 0.8; }
-        .status-badge { font-size: 0.8em; padding: 2px 8px; border-radius: 10px; background: #eee; }
 
-        /* تصميم قسم الدخول */
-        #loginSection { max-width: 400px; margin: 100px auto; text-align: center; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input[type="password"] { width: 90%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
-        
-        .admin-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .status-badge { font-size: 0.8em; padding: 2px 8px; border-radius: 10px; background: #eee; float: left; }
+
+        /* قسم الدخول */
+        #loginSection { max-width: 400px; margin: 100px auto; text-align: center; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        input[type="password"] { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; text-align: center; box-sizing: border-box; font-size: 1.1em; }
     </style>
 </head>
 <body>
 
     <div id="loginSection">
-        <h2>دخول المسؤول</h2>
-        <input type="password" id="passInput" placeholder="أدخل كلمة المرور">
-        <button onclick="checkPass()" style="background: var(--primary); width: 100%; padding: 10px;">دخول</button>
-        <p id="errorMsg" style="color: red; display: none; margin-top: 10px;">كلمة المرور خاطئة!</p>
+        <h2 style="color: var(--primary);">قفل المسؤول</h2>
+        <p style="color: #666; margin-bottom: 20px;">يرجى إدخال رمز الوصول للمتابعة</p>
+        <input type="password" id="passInput" placeholder="••••••••">
+        <button onclick="checkPass()" style="background: var(--primary); width: 100%; padding: 12px; font-size: 1em;">فتح اللوحة</button>
+        <p id="errorMsg" style="color: var(--danger); display: none; margin-top: 15px; font-weight: bold;">⚠️ رمز الدخول غير صحيح!</p>
     </div>
 
     <div id="adminPanel" style="display: none;">
         <div class="admin-header">
-            <h1>مدير محتوى فيديوهات التطبيق</h1>
-            <button onclick="location.reload()" style="background: var(--primary);">خروج</button>
+            <h1 style="margin: 0; font-size: 1.5em;">مدير المحتوى</h1>
+            <div>
+                <button class="btn-clean" onclick="removeDuplicates()" style="margin-left: 10px;">✨ تنظيف المكررات</button>
+                <button class="btn-logout" onclick="location.reload()">تسجيل خروج</button>
+            </div>
         </div>
 
-        <button class="btn-clean" onclick="removeDuplicates()">✨ تنظيف الفيديوهات المكررة</button>
-
-        <div id="loader" style="text-align: center;">جاري تحميل الفيديوهات...</div>
+        <div id="loader" style="text-align: center; padding: 40px;">جاري تحميل البيانات من Firestore...</div>
         <div id="videoGrid" class="grid"></div>
     </div>
 
@@ -84,7 +93,7 @@
             }
         }
 
-        // 2. جلب البيانات
+        // 2. جلب البيانات (Real-time)
         function loadVideos() {
             const grid = document.getElementById('videoGrid');
             const loader = document.getElementById('loader');
@@ -94,88 +103,112 @@
                     grid.innerHTML = "";
                     loader.style.display = "none";
                     const data = doc.data();
-                    Object.keys(data).forEach((fieldId) => {
+                    
+                    // تحويل الكائن لمصفوفة لفرزها (اختياري)
+                    const fields = Object.keys(data);
+                    if (fields.length === 0) loader.innerHTML = "لا يوجد فيديوهات في القائمة.";
+
+                    fields.forEach((fieldId) => {
                         renderCard(fieldId, data[fieldId], grid);
                     });
                 } else {
-                    loader.innerHTML = "الوثيقة allVideos غير موجودة!";
+                    loader.innerHTML = "خطأ: الوثيقة غير موجودة في Firestore.";
                 }
             }, (error) => {
-                loader.innerHTML = "خطأ في التحميل: " + error.message;
+                loader.innerHTML = "خطأ في الصلاحيات: " + error.message;
             });
         }
 
-        // 3. بناء واجهة الفيديو
+        // 3. بناء بطاقة الفيديو
         function renderCard(fieldId, data, container) {
-            const videoId = extractYouTubeId(data.videoUrl);
-            const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : 'https://via.placeholder.com/300x180?text=No+Thumbnail';
+            const ytId = extractYouTubeId(data.videoUrl);
+            // جلب صورة مصغرة لليوتيوب أو صورة افتراضية للتيك توك
+            const thumbUrl = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : 'https://via.placeholder.com/300x180/2c3e50/ffffff?text=TikTok+Video';
 
             const card = document.createElement('div');
             card.className = `card ${data.status}`;
             card.innerHTML = `
-                <img src="${thumbUrl}" class="thumbnail" onclick="window.open('${data.videoUrl}')">
-                <p><strong>المنصة:</strong> ${data.platform} <span class="status-badge">${data.status}</span></p>
+                <img src="${thumbUrl}" class="thumbnail" onclick="window.open('${data.videoUrl}')" title="اضغط لفتح الفيديو">
+                <div class="video-info">
+                    <strong>المنصة:</strong> ${data.platform} 
+                    <span class="status-badge">${data.status === 'pending' ? 'قيد الانتظار' : 'معتمد'}</span>
+                    <div class="video-url">${data.videoUrl.substring(0, 50)}...</div>
+                </div>
                 <div class="actions">
                     ${data.status === 'pending' ? `<button class="btn-approve" onclick="updateStatus('${fieldId}', 'approved')">موافقة</button>` : `<span></span>`}
-                    <button class="btn-delete" onclick="deleteVideo('${fieldId}')">حذف نهائي</button>
+                    <button class="btn-delete" onclick="deleteVideo('${fieldId}')">حذف</button>
                 </div>
             `;
             container.appendChild(card);
         }
 
-        // 4. تحديث الحالة
+        // 4. تحديث حالة الفيديو (موافقة)
         window.updateStatus = async (fieldId, newStatus) => {
-            if(confirm("هل تريد الموافقة؟")) {
-                try {
-                    const docRef = db.collection("Videos").doc("allVideos");
-                    await docRef.update({ [`${fieldId}.status`]: newStatus });
-                } catch (e) { alert("خطأ: " + e.message); }
-            }
+            if(!confirm("هل أنت متأكد من اعتماد هذا الفيديو؟")) return;
+            try {
+                const docRef = db.collection("Videos").doc("allVideos");
+                await docRef.update({ [`${fieldId}.status`]: newStatus });
+            } catch (e) { alert("حدث خطأ: " + e.message); }
         };
 
-        // 5. الحذف النهائي
+        // 5. حذف فيديو محدد
         window.deleteVideo = async (fieldId) => {
-            if(confirm("هل أنت متأكد من حذف هذا الفيديو؟")) {
-                try {
-                    const docRef = db.collection("Videos").doc("allVideos");
-                    await docRef.update({ [fieldId]: firebase.firestore.FieldValue.delete() });
-                } catch (e) { alert("خطأ: " + e.message); }
-            }
+            if(!confirm("سيتم حذف الفيديو نهائياً من التطبيق. هل أنت متأكد؟")) return;
+            try {
+                const docRef = db.collection("Videos").doc("allVideos");
+                await docRef.update({ [fieldId]: firebase.firestore.FieldValue.delete() });
+            } catch (e) { alert("حدث خطأ: " + e.message); }
         };
 
-        // 6. ميثود حذف الفيديوهات المكررة
+        // 6. الميثود الذكي لحذف المكررات (YouTube ID & TikTok ID)
         async function removeDuplicates() {
-            if (!confirm("هل تريد حذف الفيديوهات المكررة بناءً على الرابط (URL)؟ سيبقى فيديو واحد فقط لكل رابط.")) return;
+            if (!confirm("سيتم فحص كافة الفيديوهات وحذف النسخ المكررة بناءً على رقم الفيديو (ID) لتجنب اختلاف الروابط. هل تود الاستمرار؟")) return;
 
             try {
                 const docRef = db.collection("Videos").doc("allVideos");
                 const doc = await docRef.get();
-                if (!doc.exists) return;
-
                 const data = doc.data();
-                const seenUrls = new Set();
+                const seenIds = new Set();
                 const updates = {};
                 let count = 0;
 
                 Object.keys(data).forEach(fieldId => {
                     const url = data[fieldId].videoUrl;
-                    if (seenUrls.has(url)) {
-                        updates[fieldId] = firebase.firestore.FieldValue.delete();
-                        count++;
-                    } else {
-                        seenUrls.add(url);
+                    const mediaId = extractMediaId(url); // استخراج الـ ID الفريد
+
+                    if (mediaId) {
+                        if (seenIds.has(mediaId)) {
+                            updates[fieldId] = firebase.firestore.FieldValue.delete();
+                            count++;
+                        } else {
+                            seenIds.add(mediaId);
+                        }
                     }
                 });
 
                 if (count > 0) {
                     await docRef.update(updates);
-                    alert("تم حذف " + count + " فيديوهات مكررة بنجاح!");
+                    alert("تم تنظيف القاعدة بنجاح! تم حذف " + count + " فيديوهات مكررة.");
                 } else {
-                    alert("لا يوجد فيديوهات مكررة.");
+                    alert("قاعدة البيانات نظيفة تماماً، لا يوجد مكررات.");
                 }
-            } catch (e) {
-                alert("خطأ أثناء التنظيف: " + e.message);
+            } catch (e) { alert("خطأ أثناء التنظيف: " + e.message); }
+        }
+
+        // مستخرج الـ ID لليوتيوب وتيك توك
+        function extractMediaId(url) {
+            // YouTube
+            if (url.includes("youtu")) {
+                const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+                const match = url.match(regExp);
+                return (match && match[2].length === 11) ? match[2] : null;
+            } 
+            // TikTok
+            if (url.includes("tiktok.com")) {
+                const match = url.match(/\/video\/(\d+)/);
+                return match ? match[1] : null;
             }
+            return url;
         }
 
         function extractYouTubeId(url) {
@@ -184,7 +217,8 @@
             return (match && match[2].length === 11) ? match[2] : null;
         }
 
-        document.getElementById('passInput').addEventListener('keypress', function (e) {
+        // تشغيل الدخول بضغط Enter
+        document.getElementById('passInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') checkPass();
         });
     </script>
